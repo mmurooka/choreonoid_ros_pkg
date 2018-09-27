@@ -85,9 +85,11 @@ following libraries:
   <build_depend>cmake</build_depend>
   <build_depend>boost</build_depend>
   <build_depend>eigen</build_depend>
-  <build_depend>libqt4-dev</build_depend>
-  <build_depend>libqt4-opengl-dev</build_depend>
-  <build_depend>qt4-dev-tools</build_depend>
+  <build_depend>qtbase5-dev</build_depend>
+  <build_depend>libqt5-opengl-dev</build_depend>
+  <build_depend>libqt5x11extras5-dev</build_depend>
+  <build_depend>qt5-qmake</build_depend>
+  <build_depend>assimp-dev</build_depend>
   <build_depend>libglew-dev</build_depend>
   <build_depend>yaml</build_depend>
   <build_depend>zlib</build_depend>
@@ -108,8 +110,12 @@ following libraries:
   <build_depend>mk</build_depend>
 
   <run_depend>yaml</run_depend>
-  <run_depend>libqt4</run_depend>
-  <run_depend>libqt4-opengl</run_depend>
+  <run_depend>libqt5-core</run_depend>
+  <run_depend>libqt5-gui</run_depend>
+  <run_depend>libqt5-widgets</run_depend>
+  <run_depend>libqt5-network</run_depend>
+  <run_depend>libqt5-opengl</run_depend>
+  <run_depend>assimp</run_depend>
   
   <export>
   </export>

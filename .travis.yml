@@ -8,9 +8,9 @@ notifications:
     on_success: change
     on_failure: always
 sudo: required
-dist: trusty
+dist: xenial
 before_install:
-  - export ROS_DISTRO=indigo
+  - export ROS_DISTRO=kinetic
   - export CI_SOURCE_PATH=$(pwd)
   - export REPOSITORY_NAME=${PWD##*/}
   - echo "Testing branch $TRAVIS_BRANCH of $REPOSITORY_NAME"
@@ -34,14 +34,14 @@ install:
   - catkin init
   - catkin config --merge-devel --install
   - rosdep install --from-paths src --ignore-src --rosdistro $ROS_DISTRO -y
-  - cd ~/
-  - git clone https://github.com/fkanehiro/simtrans.git
-  - cd simtrans
-  - sudo -H pip install -r requirements.txt
-  - sudo python setup.py install
-  - cd ../
+#  - cd ~/
+#  - git clone https://github.com/fkanehiro/simtrans.git
+#  - cd simtrans
+#  - sudo -H pip install -r requirements.txt
+#  - sudo python setup.py install
+#  - cd ../
 before_script:
   - source /opt/ros/$ROS_DISTRO/setup.bash  
 script:
   - cd ~/ros/ws_$REPOSITORY_NAME
-  - catkin build -p 1 choreonoid_ros_pkg
+  - catkin build --interleave -p 1 choreonoid_ros_pkg

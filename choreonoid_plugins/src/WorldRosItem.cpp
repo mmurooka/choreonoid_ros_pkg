@@ -14,6 +14,7 @@
 #include <cnoid/MessageView>
 #include <cnoid/ItemTreeView>
 #include <cnoid/EigenUtil>
+#include <fstream>
 
 using namespace cnoid;
 
@@ -545,20 +546,14 @@ bool WorldRosItem::spawnModel(gazebo_msgs::SpawnModel::Request &req,
     Load model file.
    */
 
-  char tmpfname[L_tmpnam];
+  boost::filesystem::path temp = boost::filesystem::unique_path();
   bool is_loaded = false;
-
-  memset(tmpfname, 0x00, sizeof(tmpfname));
-  strncpy(tmpfname, "cnoid_ros_pkgXXXXXX", sizeof(tmpfname));
-
-  if (mkstemp(tmpfname) != -1) {
-    std::ofstream ofs(tmpfname);
-    ofs << model_xml << std::endl;
-    ofs.flush();
-    ofs.close();
-    is_loaded = body->loadModelFile(tmpfname);
-    remove(tmpfname);
-  }
+  std::ofstream ofs(temp.native());
+  ofs << model_xml << std::endl;
+  ofs.flush();
+  ofs.close();
+  is_loaded = body->loadModelFile(temp.native());
+  remove(temp.native().c_str());
 
   if (! is_loaded) {
     return false;

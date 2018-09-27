@@ -9,12 +9,12 @@
 # for cmake
 _CNOID_ROS_PKG_BUILD_CNOID_USER_CMAKE_ARGS=""
 _CNOID_ROS_PKG_BUILD_CNOID_CONSTANT_CMAKE_ARGS="
-  -DENABLE_INSTALL_PATH=ON
+  -DENABLE_INSTALL_RPATH=ON
   -DENABLE_PYTHON=ON
   "
 
 # for make
-_CNOID_ROS_PKG_BUILD_CNOID_MAKE_ARGS="-j 4"
+_CNOID_ROS_PKG_BUILD_CNOID_MAKE_ARGS="-j$(nproc)"
 
 #
 # Main.
@@ -45,7 +45,7 @@ case ${1} in
     ;;
 
   *)
-    echo "usage:" `basename ${0}` "[ cmake | make ]"  
+    echo "usage:" `basename ${0}` "[ cmake | make ]"
     exit 1
     ;;
 esac
