@@ -95,26 +95,18 @@ private:
     SimulatorItemPtr sim;
     boost::shared_ptr<ros::NodeHandle> rosnode_;
     boost::shared_ptr<ros::AsyncSpinner> async_ros_spin_;
-    ros::CallbackQueue rosqueue_;
-    boost::shared_ptr<boost::thread> rosqueue_thread_;
-
-    /**
-       The variable for managing registration to the simulator item.
-       This registration that function of node creation at the simulation start,
-       node deletion at the simulation stop.
-     */
-    std::map<SimulatorItemPtr, std::string> registration_node_management_;
 
     /// The registration id of calling function from physics engine. (physics engine is SimulatorItem's subclass)
-    std::list<int> post_dynamics_function_regid;
+    int post_dynamics_function_regid;
 
-    void queueThread();
+    std::map<std::string, bool> hooked_simulators_;
 
     /**
-      @brief Connect to event signal, function of nodes creation and deletion.
-      The event signal is 'RootItem::instace()->sigTreeChanged()'.
+      @brief Hook simulation start and stop event
      */
-    void registrationNodeStartAndStop();
+    void hookSimulationStartAndStopEvent();
+
+    void onPostDynamics();
 
     /*
       For services and topics.

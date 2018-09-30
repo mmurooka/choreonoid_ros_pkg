@@ -18,8 +18,6 @@
 
 using namespace cnoid;
 
-#define DEBUG_WORLDROSITEM 0
-
 /*
   Namepsace of parent of topics and services.
   NOTE: If you renaming, do not include '-'.
@@ -43,15 +41,15 @@ void WorldRosItem::initialize(ExtensionManager* ext)
 WorldRosItem::WorldRosItem()
 {
   publish_clk_update_rate_ = 100.0;
-  publish_ls_update_rate_  = 100.0;
-  publish_ms_update_rate_  = 100.0;
-  publish_cs_update_rate   = 100.0;
+  publish_ls_update_rate_  = 10.0;
+  publish_ms_update_rate_  = 10.0;
+  publish_cs_update_rate   = 0.0;
   is_csmsg_verbose         = false;
 
-  registration_node_management_.clear();
-  post_dynamics_function_regid.clear();
+  hooked_simulators_.clear();
+  post_dynamics_function_regid = -1;
 
-  RootItem::instance()->sigTreeChanged().connect(boost::bind(&WorldRosItem::registrationNodeStartAndStop, this));
+  RootItem::instance()->sigTreeChanged().connect(boost::bind(&WorldRosItem::hookSimulationStartAndStopEvent, this));
 }
 
 WorldRosItem::WorldRosItem(const WorldRosItem& org)
@@ -63,10 +61,10 @@ WorldRosItem::WorldRosItem(const WorldRosItem& org)
   publish_cs_update_rate   = org.publish_cs_update_rate;
   is_csmsg_verbose         = org.is_csmsg_verbose;
 
-  registration_node_management_.clear();
-  post_dynamics_function_regid.clear();
+  hooked_simulators_.clear();
+  post_dynamics_function_regid = -1;
 
-  RootItem::instance()->sigTreeChanged().connect(boost::bind(&WorldRosItem::registrationNodeStartAndStop, this));
+  RootItem::instance()->sigTreeChanged().connect(boost::bind(&WorldRosItem::hookSimulationStartAndStopEvent, this));
 }
 
 WorldRosItem::~WorldRosItem()
@@ -239,10 +237,10 @@ void WorldRosItem::publishContactsState()
   return;
 }
 
-void WorldRosItem::registrationNodeStartAndStop()
+void WorldRosItem::hookSimulationStartAndStopEvent()
 {
   WorldItemPtr parent;
-  std::map<SimulatorItemPtr, std::string>::iterator it;
+  std::map<std::string, bool>::iterator it;
 
   if (! (parent = this->findOwnerItem<WorldItem>())) {
     return;
@@ -252,18 +250,14 @@ void WorldRosItem::registrationNodeStartAndStop()
     SimulatorItemPtr p = dynamic_cast<SimulatorItem*>(child);
 
     if (p && ! p->isRunning()) {
-      it = registration_node_management_.find(p);
-
-      if (it == registration_node_management_.end()) {
+      it = hooked_simulators_.find(p->name());
+      if (it == hooked_simulators_.end()) {
         p->sigSimulationStarted().connect(std::bind(&WorldRosItem::start, this));
         p->sigSimulationFinished().connect(std::bind(&WorldRosItem::stop, this));
-
-        registration_node_management_[p] = p->name();
-#if (DEBUG_WORLDROSITEM > 0)
-        std::cout << registration_node_management_[p] << ": regsitered" << std::endl;
+        hooked_simulators_[p->name()] = true;
+        ROS_DEBUG("Hooked simulator %s", p->name().c_str());
       } else {
-        std::cout << it->second << ": already registered" << std::endl;
-#endif  /* (DEBUG_WORLDROSITEM > 0) */
+        ROS_DEBUG("Simulator %s is already hooked", it->first.c_str());
       }
     }
   }
@@ -282,49 +276,44 @@ void WorldRosItem::start()
   ROS_DEBUG("Found WorldItem: %s", world->name().c_str());
   ROS_DEBUG("Found SimulatorItem: %s", sim->name().c_str());
 
+  double now = sim->currentTime();
+
   rosnode_ = boost::shared_ptr<ros::NodeHandle>(new ros::NodeHandle(cnoidrospkg_parent_namespace_));
 
-  if (publish_clk_update_rate_ > 0.0 && publish_clk_update_rate_ <= 1000.0) {
+  // apply uppper limits
+  if (publish_clk_update_rate_ > 1000.0) publish_clk_update_rate_ = 1000.0;
+  if (publish_ls_update_rate_ > 1000.0) publish_ls_update_rate_ = 1000.0;
+  if (publish_ms_update_rate_ > 1000.0) publish_ms_update_rate_ = 1000.0;
+  if (publish_cs_update_rate > 1000.0) publish_cs_update_rate = 1000.0;
+
+  if (publish_clk_update_rate_ > 0.0) {
     pub_clock_                   = rosnode_->advertise<rosgraph_msgs::Clock>("/clock", 10);
     publish_clk_update_interval_ = 1.0 / publish_clk_update_rate_;
-    publish_clk_next_time_       = 0.0;
-
-    post_dynamics_function_regid.push_back(
-      sim->addPostDynamicsFunction(std::bind(&WorldRosItem::publishClock, this)));
+    publish_clk_next_time_       = now + publish_clk_update_interval_;
   }
 
-  if (publish_ls_update_rate_ > 0.0 && publish_ls_update_rate_ <= 1000.0) {
+  if (publish_ls_update_rate_ > 0.0) {
     pub_link_states_            = rosnode_->advertise<gazebo_msgs::LinkStates>("link_states", 10);
     publish_ls_update_interval_ = 1.0 / publish_ls_update_rate_;
-    publish_ls_next_time_       = 0.0;
-
-    post_dynamics_function_regid.push_back(
-      sim->addPostDynamicsFunction(std::bind(&WorldRosItem::publishLinkStates, this)));
+    publish_ls_next_time_       = now + publish_ls_update_interval_;
   }
 
-  if (publish_ms_update_rate_ > 0.0 && publish_ms_update_rate_ <= 1000.0) {
+  if (publish_ms_update_rate_ > 0.0) {
     pub_model_states_           = rosnode_->advertise<gazebo_msgs::ModelStates>("model_states", 10);
     publish_ms_update_interval_ = 1.0 / publish_ms_update_rate_;
-    publish_ms_next_time_       = 0.0;
-
-    post_dynamics_function_regid.push_back(
-      sim->addPostDynamicsFunction(std::bind(&WorldRosItem::publishModelStates, this)));
+    publish_ms_next_time_       = now + publish_ms_update_interval_;
   }
 
-  if (publish_cs_update_rate > 0.0 && publish_cs_update_rate <= 1000.0) {
+  if (publish_cs_update_rate > 0.0) {
     std::string topic_name = world->name() + "/physics/contacts";
     std::replace(topic_name.begin(), topic_name.end(), '-', '_');
 
     pub_world_contacts_state_  = rosnode_->advertise<gazebo_msgs::ContactsState>(topic_name, 10);
     sim_access_                = static_cast<WorldRosSimulatorItemAccessor*>(sim.get());
     publish_cs_update_interval = 1.0 / publish_cs_update_rate;
-    publish_cs_next_time       = 0.0;
-
-    post_dynamics_function_regid.push_back(
-      sim->addPostDynamicsFunction(std::bind(&WorldRosItem::publishContactsState, this)));
+    publish_cs_next_time       = now + publish_cs_update_interval;
 
     AISTSimulatorItem* aist_sim;
-
     if ((aist_sim = dynamic_cast<AISTSimulatorItem*>(sim.get()))) {
       aist_sim->setConstraintForceOutputEnabled(true);
     }
@@ -332,12 +321,14 @@ void WorldRosItem::start()
     contacts_state.states.clear();
   }
 
+  post_dynamics_function_regid = sim->addPostDynamicsFunction(std::bind(&WorldRosItem::onPostDynamics, this));
+
   std::string pause_physics_service_name("pause_physics");
   ros::AdvertiseServiceOptions pause_physics_aso =
     ros::AdvertiseServiceOptions::create<std_srvs::Empty>(
                                                           pause_physics_service_name,
                                                           boost::bind(&WorldRosItem::pausePhysics,this,_1,_2),
-                                                          ros::VoidPtr(), &rosqueue_);
+                                                          ros::VoidPtr(), ros::getGlobalCallbackQueue());
   pause_physics_service_ = rosnode_->advertiseService(pause_physics_aso);
 
   std::string unpause_physics_service_name("unpause_physics");
@@ -345,7 +336,7 @@ void WorldRosItem::start()
     ros::AdvertiseServiceOptions::create<std_srvs::Empty>(
                                                           unpause_physics_service_name,
                                                           boost::bind(&WorldRosItem::unpausePhysics,this,_1,_2),
-                                                          ros::VoidPtr(), &rosqueue_);
+                                                          ros::VoidPtr(), ros::getGlobalCallbackQueue());
   unpause_physics_service_ = rosnode_->advertiseService(unpause_physics_aso);
 
   std::string reset_simulation_service_name("reset_simulation");
@@ -353,7 +344,7 @@ void WorldRosItem::start()
     ros::AdvertiseServiceOptions::create<std_srvs::Empty>(
                                                           reset_simulation_service_name,
                                                           boost::bind(&WorldRosItem::resetSimulation,this,_1,_2),
-                                                          ros::VoidPtr(), &rosqueue_);
+                                                          ros::VoidPtr(), ros::getGlobalCallbackQueue());
   reset_simulation_service_ = rosnode_->advertiseService(reset_simulation_aso);
 
   std::string spawn_vrml_model_service_name("spawn_vrml_model");
@@ -361,7 +352,7 @@ void WorldRosItem::start()
     ros::AdvertiseServiceOptions::create<gazebo_msgs::SpawnModel>(
                                                                   spawn_vrml_model_service_name,
                                                                   boost::bind(&WorldRosItem::spawnModel,this,_1,_2),
-                                                                  ros::VoidPtr(), &rosqueue_);
+                                                                  ros::VoidPtr(), ros::getGlobalCallbackQueue());
   spawn_vrml_model_service_ = rosnode_->advertiseService(spawn_vrml_model_aso);
 
   std::string spawn_urdf_model_service_name("spawn_urdf_model");
@@ -369,7 +360,7 @@ void WorldRosItem::start()
     ros::AdvertiseServiceOptions::create<gazebo_msgs::SpawnModel>(
                                                                   spawn_urdf_model_service_name,
                                                                   boost::bind(&WorldRosItem::spawnModel,this,_1,_2),
-                                                                  ros::VoidPtr(), &rosqueue_);
+                                                                  ros::VoidPtr(), ros::getGlobalCallbackQueue());
   spawn_urdf_model_service_ = rosnode_->advertiseService(spawn_urdf_model_aso);
 
   std::string spawn_sdf_model_service_name("spawn_sdf_model");
@@ -377,7 +368,7 @@ void WorldRosItem::start()
     ros::AdvertiseServiceOptions::create<gazebo_msgs::SpawnModel>(
                                                                   spawn_sdf_model_service_name,
                                                                   boost::bind(&WorldRosItem::spawnModel,this,_1,_2),
-                                                                  ros::VoidPtr(), &rosqueue_);
+                                                                  ros::VoidPtr(), ros::getGlobalCallbackQueue());
   spawn_sdf_model_service_ = rosnode_->advertiseService(spawn_sdf_model_aso);
 
   std::string delete_model_service_name("delete_model");
@@ -385,13 +376,19 @@ void WorldRosItem::start()
     ros::AdvertiseServiceOptions::create<gazebo_msgs::DeleteModel>(
                                                                    delete_model_service_name,
                                                                    boost::bind(&WorldRosItem::deleteModel,this,_1,_2),
-                                                                   ros::VoidPtr(), &rosqueue_);
+                                                                   ros::VoidPtr(), ros::getGlobalCallbackQueue());
   delete_model_service_ = rosnode_->advertiseService(delete_aso);
 
   async_ros_spin_.reset(new ros::AsyncSpinner(0));
   async_ros_spin_->start();
+}
 
-  rosqueue_thread_.reset(new boost::thread(&WorldRosItem::queueThread, this));
+void WorldRosItem::onPostDynamics()
+{
+  if (publish_clk_update_rate_ > 0.0) publishClock();
+  if (publish_ls_update_rate_ > 0.0) publishLinkStates();
+  if (publish_ms_update_rate_ > 0.0) publishModelStates();
+  if (publish_cs_update_rate > 0.0) publishContactsState();
 }
 
 void WorldRosItem::publishClock()
@@ -497,14 +494,6 @@ void WorldRosItem::publishModelStates()
   return;
 }
 
-void WorldRosItem::queueThread()
-{
-  static const double timeout = 0.001;
-  while (rosnode_->ok()) {
-    rosqueue_.callAvailable(ros::WallDuration(timeout));
-  }
-}
-
 bool WorldRosItem::pausePhysics(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
 {
   sim->pauseSimulation();
@@ -594,16 +583,12 @@ bool WorldRosItem::deleteModel(gazebo_msgs::DeleteModel::Request &req,
 
 void WorldRosItem::stop()
 {
-  while (! post_dynamics_function_regid.empty()) {
-    sim->removePostDynamicsFunction(post_dynamics_function_regid.back());
-    post_dynamics_function_regid.pop_back();
+  if (post_dynamics_function_regid != -1) {
+    sim->removePostDynamicsFunction(post_dynamics_function_regid);
+    post_dynamics_function_regid = -1;
   }
 
   if (ros::ok()) {
-    if (rosqueue_.isEnabled()) {
-      rosqueue_.clear();
-    }
-
     if (async_ros_spin_) {
       async_ros_spin_->stop();
     }
@@ -612,12 +597,6 @@ void WorldRosItem::stop()
       rosnode_->shutdown();
     }
   }
-
-  if (rosqueue_thread_) {
-    rosqueue_thread_->join();
-  }
-
-  registration_node_management_.clear();
 
   return;
 }
