@@ -129,59 +129,80 @@ bool BodyRosItem::createSensors(BodyPtr body)
   rangeVisionSensors_.assign(devices.extract<RangeCamera>());
   rangeSensors_.assign(devices.extract<RangeSensor>());
 
+  for (size_t i=0; i < visionSensors_.size(); ++i) {
+    if (Camera* sensor = visionSensors_[i]) {
+      RangeCamera* camera = dynamic_cast<RangeCamera*>(sensor);
+      if (camera) {
+        rangeVisionSensors_.push_back(camera);
+      }
+    }
+  }
+
   force_sensor_publishers_.resize(forceSensors_.size());
   for (size_t i=0; i < forceSensors_.size(); ++i) {
     if (ForceSensor* sensor = forceSensors_[i]) {
-      force_sensor_publishers_[i] = rosnode_->advertise<geometry_msgs::Wrench>(sensor->name(), 1);
+      std::string name = sensor->name();
+      std::replace(name.begin(), name.end(), '-', '_');
+      force_sensor_publishers_[i] = rosnode_->advertise<geometry_msgs::WrenchStamped>(name, 1);
       sensor->sigStateChanged().connect(boost::bind(&BodyRosItem::updateForceSensor,
                                                     this, sensor, force_sensor_publishers_[i]));
-      ROS_DEBUG("Create force sensor %s with cycle %f", sensor->name().c_str(), sensor->cycle());
+      ROS_INFO("Create force sensor %s with cycle %f", sensor->name().c_str(), sensor->cycle());
     }
   }
   rate_gyro_sensor_publishers_.resize(gyroSensors_.size());
   for (size_t i=0; i < gyroSensors_.size(); ++i) {
     if (RateGyroSensor* sensor = gyroSensors_[i]) {
-      rate_gyro_sensor_publishers_[i] = rosnode_->advertise<sensor_msgs::Imu>(sensor->name(), 1);
+      std::string name = sensor->name();
+      std::replace(name.begin(), name.end(), '-', '_');
+      rate_gyro_sensor_publishers_[i] = rosnode_->advertise<sensor_msgs::Imu>(name, 1);
       sensor->sigStateChanged().connect(boost::bind(&BodyRosItem::updateRateGyroSensor,
                                                     this, sensor, rate_gyro_sensor_publishers_[i]));
-      ROS_DEBUG("Create gyro sensor %s with cycle %f", sensor->name().c_str(), sensor->cycle());
+      ROS_INFO("Create gyro sensor %s with cycle %f", sensor->name().c_str(), sensor->cycle());
     }
   }
   accel_sensor_publishers_.resize(accelSensors_.size());
   for (size_t i=0; i < accelSensors_.size(); ++i) {
     if (AccelerationSensor* sensor = accelSensors_[i]) {
-      accel_sensor_publishers_[i] = rosnode_->advertise<sensor_msgs::Imu>(sensor->name(), 1);
+      std::string name = sensor->name();
+      std::replace(name.begin(), name.end(), '-', '_');
+      accel_sensor_publishers_[i] = rosnode_->advertise<sensor_msgs::Imu>(name, 1);
       sensor->sigStateChanged().connect(boost::bind(&BodyRosItem::updateAccelSensor,
                                                     this, sensor, accel_sensor_publishers_[i]));
-      ROS_DEBUG("Create accel sensor %s with cycle %f", sensor->name().c_str(), sensor->cycle());
+      ROS_INFO("Create accel sensor %s with cycle %f", sensor->name().c_str(), sensor->cycle());
     }
   }
   image_transport::ImageTransport it(*rosnode_);
   vision_sensor_publishers_.resize(visionSensors_.size());
   for (size_t i=0; i < visionSensors_.size(); ++i) {
     if (Camera* sensor = visionSensors_[i]) {
-      vision_sensor_publishers_[i] = it.advertise(sensor->name() + "/image_raw", 1);
+      std::string name = sensor->name();
+      std::replace(name.begin(), name.end(), '-', '_');
+      vision_sensor_publishers_[i] = it.advertise(name + "/image_raw", 1);
       sensor->sigStateChanged().connect(boost::bind(&BodyRosItem::updateVisionSensor,
                                                     this, sensor, vision_sensor_publishers_[i]));
-      ROS_DEBUG("Create vision sensor %s with cycle %f", sensor->name().c_str(), sensor->cycle());
+      ROS_INFO("Create vision sensor %s with cycle %f", sensor->name().c_str(), sensor->cycle());
     }
   }
   range_vision_sensor_publishers_.resize(rangeVisionSensors_.size());
   for (size_t i=0; i < rangeVisionSensors_.size(); ++i) {
     if (RangeCamera* sensor = rangeVisionSensors_[i]) {
-      range_vision_sensor_publishers_[i] = rosnode_->advertise<sensor_msgs::PointCloud2>(sensor->name() + "/point_cloud", 1);
+      std::string name = sensor->name();
+      std::replace(name.begin(), name.end(), '-', '_');
+      range_vision_sensor_publishers_[i] = rosnode_->advertise<sensor_msgs::PointCloud2>(name + "/point_cloud", 1);
       sensor->sigStateChanged().connect(boost::bind(&BodyRosItem::updateRangeVisionSensor,
                                                     this, sensor, range_vision_sensor_publishers_[i]));
-      ROS_DEBUG("Create RGBD sensor %s with cycle %f", sensor->name().c_str(), sensor->cycle());
+      ROS_INFO("Create RGBD sensor %s with cycle %f", sensor->name().c_str(), sensor->cycle());
     }
   }
   range_sensor_publishers_.resize(rangeSensors_.size());
   for (size_t i=0; i < rangeSensors_.size(); ++i) {
     if (RangeSensor* sensor = rangeSensors_[i]) {
-      range_sensor_publishers_[i] = rosnode_->advertise<sensor_msgs::LaserScan>(sensor->name(), 1);
+      std::string name = sensor->name();
+      std::replace(name.begin(), name.end(), '-', '_');
+      range_sensor_publishers_[i] = rosnode_->advertise<sensor_msgs::LaserScan>(name, 1);
       sensor->sigStateChanged().connect(boost::bind(&BodyRosItem::updateRangeSensor,
                                                     this, sensor, range_sensor_publishers_[i]));
-      ROS_DEBUG("Create range sensor %s with cycle %f", sensor->name().c_str(), sensor->cycle());
+      ROS_INFO("Create range sensor %s with cycle %f", sensor->name().c_str(), sensor->cycle());
     }
   }
 }
@@ -212,13 +233,15 @@ bool BodyRosItem::control()
 
 void BodyRosItem::updateForceSensor(ForceSensor* sensor, ros::Publisher& publisher)
 {
-  geometry_msgs::Wrench force;
-  force.force.x = sensor->F()[0];
-  force.force.y = sensor->F()[1];
-  force.force.z = sensor->F()[2];
-  force.torque.x = sensor->F()[3];
-  force.torque.y = sensor->F()[4];
-  force.torque.z = sensor->F()[5];
+  geometry_msgs::WrenchStamped force;
+  force.header.stamp.fromSec(controllerTarget->currentTime());
+  force.header.frame_id = sensor->name();
+  force.wrench.force.x = sensor->F()[0];
+  force.wrench.force.y = sensor->F()[1];
+  force.wrench.force.z = sensor->F()[2];
+  force.wrench.torque.x = sensor->F()[3];
+  force.wrench.torque.y = sensor->F()[4];
+  force.wrench.torque.z = sensor->F()[5];
   publisher.publish(force);
 }
 
