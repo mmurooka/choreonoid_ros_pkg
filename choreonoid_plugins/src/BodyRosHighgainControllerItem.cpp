@@ -104,7 +104,8 @@ void BodyRosHighgainControllerItem::calculate_hg_parameter(
   if (velocity) {
     dq = *velocity;
   } else {
-    dq = (qref - joint->q()) / timeStep_;
+    dq = 0;
+    // dq = (qref - joint->q()) / timeStep_;
   }
 
   if (std::isnan(dq)) {
@@ -115,7 +116,8 @@ void BodyRosHighgainControllerItem::calculate_hg_parameter(
   if (acceleration) {
     ddq = *acceleration;
   } else {
-    ddq = dq / timeStep_;
+    ddq = 0;
+    // ddq = dq / timeStep_;
   }
 
   if (std::isnan(ddq)) {
