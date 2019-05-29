@@ -1,7 +1,7 @@
 # -*- mode: makefile -*-
 GIT_DIR = build/choreonoid-master
 GIT_URL = https://github.com/s-nakaoka/choreonoid.git
-GIT_REVISION = master
+GIT_REVISION = release-1.7 # master
 
 MK_DIR = $(shell rospack find mk)
 include $(MK_DIR)/git_checkout.mk
