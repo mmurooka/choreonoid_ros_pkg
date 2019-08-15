@@ -116,7 +116,7 @@ void WorldRosItem::doPutProperties(PutPropertyFunction& putProperty)
 
 void WorldRosItem::publishContactsState()
 {
-  CollisionLinkPairListPtr collision_pairs;
+    std::shared_ptr<CollisionLinkPairList> collision_pairs;
   size_t                   i;
 
   if (! sim_access_ || ! sim_access_->get_collisions()) {
