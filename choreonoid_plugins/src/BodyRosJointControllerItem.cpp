@@ -70,10 +70,10 @@ bool BodyRosJointControllerItem::hook_of_start_at_after_creation_rosnode()
 bool BodyRosJointControllerItem::initialize(Target* target)
 {
   if (! target) {
-    MessageView::instance()->putln(MessageView::ERROR, boost::format("Target not found"));
+    MessageView::instance()->putln(MessageView::ERROR, "Target not found");
     return false;
   } else if (! target->body()) {
-    MessageView::instance()->putln(MessageView::ERROR, boost::format("BodyItem not found"));
+    MessageView::instance()->putln(MessageView::ERROR, "BodyItem not found");
     return false;
   } else if (control_mode_name_.empty()) {
     ROS_ERROR("%s: control_mode_name_ is empty, please report to developer", __PRETTY_FUNCTION__);

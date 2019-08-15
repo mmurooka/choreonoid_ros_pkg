@@ -89,9 +89,10 @@ bool BodyRosTorqueControllerItem::set_pdc_parameters(Listing* src, std::vector<d
     try {
       dst[i] = src->at(i)->toDouble();
     } catch(const ValueNode::NotScalarException ex) {
-      MessageView::instance()->putln(
-        MessageView::ERROR, boost::format("%1% (%1%)") % ex.message() % pdc_parameter_filename_
-        );
+        std::string error_msg = ex.message();
+        error_msg += " : ";
+        error_msg += pdc_parameter_filename_;
+        MessageView::instance()->putln(MessageView::ERROR, error_msg);
       return false;
     }
   }
@@ -113,64 +114,60 @@ bool BodyRosTorqueControllerItem::load_pdc_parameters()
   u_upper.resize(body()->numJoints());
 
   if (pdc_parameter_filename_.empty()) {
-    MessageView::instance()->putln(MessageView::ERROR, boost::format("'PD control parameter file' is empty"));
+    MessageView::instance()->putln(MessageView::ERROR, "'PD control parameter file' is empty");
     return false;
   } else if (! reader.load(pdc_parameter_filename_)) {
-    MessageView::instance()->putln(
-      MessageView::ERROR, 
-      boost::format("PD control parameter file load failed (%1%)") % pdc_parameter_filename_
-      );
+      std::string error_msg = "PD control parameter file load failed : ";
+      error_msg += pdc_parameter_filename_;
+    MessageView::instance()->putln(MessageView::ERROR, error_msg);
     return false;
   } else if (reader.numDocuments() != 1) {
-    MessageView::instance()->putln(
-      MessageView::ERROR,
-      boost::format("invalid format found (%1%)") % pdc_parameter_filename_
-      );
+      std::string error_msg = "invalid format found : ";
+      error_msg += pdc_parameter_filename_;     
+      MessageView::instance()->putln(MessageView::ERROR, error_msg);
     return false;
   }
 
   vnode = reader.document(0);
-
   if (! vnode) {
-    MessageView::instance()->putln(
-      MessageView::ERROR,
-      boost::format("file is empty (%1%)") % pdc_parameter_filename_
-      );
+      std::string error_msg = "file is empty : ";
+      error_msg += pdc_parameter_filename_;     
+      MessageView::instance()->putln(MessageView::ERROR, error_msg);
     return false;
   } else if (vnode->nodeType() != ValueNode::MAPPING) {
-    MessageView::instance()->putln(
-      MessageView::ERROR,
-      boost::format("invalid node type found (%1%)") % pdc_parameter_filename_
-      );
+      std::string error_msg = "invalid node type found : ";
+      error_msg += pdc_parameter_filename_;     
+      MessageView::instance()->putln(MessageView::ERROR, error_msg);
     return false;
   }
 
   mapping = vnode->toMapping();
 
   if (mapping->empty() || mapping->size() != 4) {
-    MessageView::instance()->putln(
-      MessageView::ERROR,
-      boost::format("mismatch of number of the parameters (%1%)") % pdc_parameter_filename_
-      );
+      std::string error_msg = "mismatch of number of the parameters : ";
+      error_msg += pdc_parameter_filename_;     
+      MessageView::instance()->putln(MessageView::ERROR, error_msg);
     return false;
   }
 
   for (Mapping::const_iterator it = mapping->begin(); it != mapping->end(); it++) {
     if (it->second->nodeType() != ValueNode::LISTING) {
-      MessageView::instance()->putln(
-        MessageView::ERROR,
-        boost::format("invalid node type found (%1%)") % pdc_parameter_filename_
-        );
+        std::string error_msg = "invalid node type found : ";
+        error_msg += pdc_parameter_filename_;     
+        MessageView::instance()->putln(MessageView::ERROR, error_msg);
       return false;
     }
 
     listing = it->second->toListing();
 
     if (listing->size() != body()->numJoints()) {
-      MessageView::instance()->putln(
-        MessageView::ERROR,
-        boost::format("joint size mismatch (%1%: %2% joint: %3%)") % it->first % listing->size() % body()->numJoints()
-        );
+        std::string error_msg = "joint size mismatch : ";
+        error_msg += it->first;
+        error_msg += ", ";
+        error_msg += listing->size();
+        error_msg += " joint: ";
+        error_msg += body()->numJoints();
+        MessageView::instance()->putln(MessageView::ERROR, error_msg);
       return false;
     }
 
@@ -183,10 +180,9 @@ bool BodyRosTorqueControllerItem::load_pdc_parameters()
     } else if (it->first == "u_upper") {
       result = set_pdc_parameters(listing, u_upper);
     } else {
-      MessageView::instance()->putln(
-        MessageView::ERROR,
-        boost::format("invalid key found %1%") % it->first
-        );
+        std::string error_msg = "invalid key found : ";
+        error_msg += it->first;
+        MessageView::instance()->putln(MessageView::ERROR, error_msg);
       return false;
     }
 
