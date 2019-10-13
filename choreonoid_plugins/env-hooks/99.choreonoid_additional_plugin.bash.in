@@ -1,0 +1,6 @@
+CHOREONOID_ADDITIONAL_PLUGIN_PATH=@CATKIN_DEVEL_PREFIX@/@CATKIN_PACKAGE_LIB_DESTINATION@
+
+# use the method of https://stackoverflow.com/questions/1396066/detect-if-users-path-has-a-specific-directory-in-it/1397020#1397020
+if [[ ! ":$CNOID_PLUGIN_PATH:" == *":$CHOREONOID_ADDITIONAL_PLUGIN_PATH:"* ]]; then
+    export CNOID_PLUGIN_PATH=@CATKIN_DEVEL_PREFIX@/@CATKIN_PACKAGE_LIB_DESTINATION@:${CNOID_PLUGIN_PATH}
+fi

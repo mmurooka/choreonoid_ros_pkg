@@ -203,6 +203,9 @@ add_cnoid_plugin(CnoidRosBodyPlugin
 
 target_link_libraries(CnoidRosBodyPlugin ${CNOID_LIBRARIES} CnoidBodyPlugin ${catkin_LIBRARIES})
 
+configure_file(${PROJECT_SOURCE_DIR}/env-hooks/99.choreonoid_additional_plugin.bash.in ${PROJECT_SOURCE_DIR}/env-hooks/99.choreonoid_ros_plugin.bash @ONLY)
+catkin_add_env_hooks(99.choreonoid_ros_plugin SHELLS bash DIRECTORY ${PROJECT_SOURCE_DIR}/env-hooks)
+
 install(TARGETS 
   CnoidRosBodyPlugin
   RUNTIME DESTINATION ${CNOID_PLUGIN_SUBDIR}
