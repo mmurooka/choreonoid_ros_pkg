@@ -119,41 +119,6 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -finline-functions")
 option(ENABLE_GCC_FVISIBILITY_HIDDEN "Use the -fvisibility=hidden option when the sources are compiled" ON)
 option(ENABLE_INSTALL_RPATH "Enable RPATH setting for installed binary files" ON)
 
-function(add_cnoid_plugin)
-
-  add_library(${ARGV})
-
-  if(ENABLE_GCC_FVISIBILITY_HIDDEN)
-    get_target_property(compile_flags ${ARGV0} COMPILE_FLAGS)
-    if(compile_flags)
-      set_target_properties(${ARGV0} PROPERTIES COMPILE_FLAGS "${compile_flags} -fvisibility=hidden")
-    else()
-      set_target_properties(${ARGV0} PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
-    endif()
-  endif()
-
-#  set_target_properties(${ARGV0} PROPERTIES
-#    LIBRARY_OUTPUT_DIRECTORY ${CNOID_PLUGIN_SUBDIR}
-#    ARCHIVE_OUTPUT_DIRECTORY ${CNOID_PLUGIN_SUBDIR}
-#    RUNTIME_OUTPUT_DIRECTORY ${CNOID_PLUGIN_SUBDIR})
-
-  if(ENABLE_INSTALL_RPATH)
-    if(APPLE)
-      set_target_properties(${ARGV0} PROPERTIES INSTALL_NAME_DIR "@rpath")
-      set_target_properties(${ARGV0} PROPERTIES LINK_FLAGS "-Wl,-rpath,@loader_path,-rpath,@loader_path/..")
-    else()
-      set_target_properties(${ARGV0} PROPERTIES INSTALL_RPATH "$ORIGIN:$ORIGIN/..")
-    endif()
-  else()
-    if(APPLE)
-      set_target_properties(${ARGV0} PROPERTIES INSTALL_NAME_DIR "")
-    else()
-      set_target_properties(${ARGV0} PROPERTIES INSTALL_RPATH "$ORIGIN")
-    endif()
-  endif()
-
-endfunction()
-
 if(ENABLE_PYTHON)
 
   find_package(PythonLibs 2.7 REQUIRED)
@@ -187,11 +152,10 @@ if(ENABLE_PYTHON)
 
   endfunction()
 
-
 endif()
 
 ## Plugins
-add_cnoid_plugin(CnoidRosBodyPlugin
+add_library(CnoidRosBodyPlugin
   SHARED
   src/RosBodyPlugin.cpp
   src/BodyRosItem.cpp
@@ -201,13 +165,16 @@ add_cnoid_plugin(CnoidRosBodyPlugin
   src/BodyRosHighgainControllerItem.cpp
 )
 
-target_link_libraries(CnoidRosBodyPlugin ${CNOID_LIBRARIES} CnoidBodyPlugin ${catkin_LIBRARIES})
+target_link_libraries(CnoidRosBodyPlugin
+  ${CNOID_LIBRARIES} CnoidBodyPlugin ${catkin_LIBRARIES}
+)
 
-install(TARGETS 
-  CnoidRosBodyPlugin
-  RUNTIME DESTINATION ${CNOID_PLUGIN_SUBDIR}
+set_target_properties(CnoidRosBodyPlugin PROPERTIES
+  LIBRARY_OUTPUT_DIRECTORY ${CNOID_PLUGIN_SUBDIR}
+)
+
+install(TARGETS CnoidRosBodyPlugin
   LIBRARY DESTINATION ${CNOID_PLUGIN_SUBDIR}
-  ARCHIVE DESTINATION ${CNOID_PLUGIN_SUBDIR}
 )
 
 install(
