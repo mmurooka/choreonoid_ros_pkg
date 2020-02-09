@@ -18,7 +18,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 find_package(catkin REQUIRED COMPONENTS 
-  choreonoid_ros
+  choreonoid
   message_generation 
   roscpp 
   rospy 
