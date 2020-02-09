@@ -225,5 +225,7 @@ install(
 )
 
 if(ENABLE_PYTHON)
-  add_subdirectory(src/python)
+  if(NOT CHOREONOID_USE_PYBIND11)
+    add_subdirectory(src/python)
+  endif()
 endif()
