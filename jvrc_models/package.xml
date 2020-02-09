@@ -1,4 +1,4 @@
-<package>
+<package format="2">
   <name>jvrc_models</name>
   <version>0.0.0</version>
   <description>
@@ -16,6 +16,4 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <export>
-  </export>
 </package>
