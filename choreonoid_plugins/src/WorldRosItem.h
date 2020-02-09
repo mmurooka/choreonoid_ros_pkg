@@ -14,6 +14,7 @@
 #include <cnoid/SimulatorItem>
 #include <cnoid/AISTSimulatorItem>
 #include <cnoid/TimeBar>
+#include <cnoid/PutPropertyFunction>
 #include "exportdecl.h"
 
 #include <ros/ros.h>

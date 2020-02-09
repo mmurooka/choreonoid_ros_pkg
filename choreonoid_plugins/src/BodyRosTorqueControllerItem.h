@@ -8,6 +8,7 @@
 
 #include "BodyRosJointControllerItem.h"
 
+#include <cnoid/PutPropertyFunction>
 #include <cnoid/YAMLReader>
 #include <cnoid/FileUtil>
 
