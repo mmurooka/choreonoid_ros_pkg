@@ -1,4 +1,4 @@
-<package>
+<package format="2">
   <name>choreonoid_ros</name>
   <version>1.5.0</version>
   <description>
@@ -109,13 +109,13 @@ following libraries:
   <build_depend>doxygen</build_depend>
   <build_depend>mk</build_depend>
 
-  <run_depend>yaml</run_depend>
-  <run_depend>libqt5-core</run_depend>
-  <run_depend>libqt5-gui</run_depend>
-  <run_depend>libqt5-widgets</run_depend>
-  <run_depend>libqt5-network</run_depend>
-  <run_depend>libqt5-opengl</run_depend>
-  <run_depend>assimp</run_depend>
+  <exec_depend>yaml</exec_depend>
+  <exec_depend>libqt5-core</exec_depend>
+  <exec_depend>libqt5-gui</exec_depend>
+  <exec_depend>libqt5-widgets</exec_depend>
+  <exec_depend>libqt5-network</exec_depend>
+  <exec_depend>libqt5-opengl</exec_depend>
+  <exec_depend>assimp</exec_depend>
   
   <export>
   </export>

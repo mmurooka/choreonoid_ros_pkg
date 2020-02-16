@@ -1,4 +1,4 @@
-<package>
+<package format="2">
   <name>choreonoid_ros_pkg</name>
   <version>1.5.0</version>
   <description>
@@ -22,10 +22,10 @@
   <build_depend>jvrc_models</build_depend>
   -->
 
-  <run_depend>choreonoid_ros</run_depend>
-  <run_depend>choreonoid_plugins</run_depend>
+  <exec_depend>choreonoid_ros</exec_depend>
+  <exec_depend>choreonoid_plugins</exec_depend>
   <!--
-  <run_depend>jvrc_models</run_depend>
+  <exec_depend>jvrc_models</exec_depend>
   -->
 
   <export>

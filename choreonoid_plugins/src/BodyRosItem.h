@@ -10,6 +10,7 @@
 #include <cnoid/RangeCamera>
 #include <cnoid/RangeSensor>
 #include <cnoid/Archive>
+#include <cnoid/PutPropertyFunction>
 #include "exportdecl.h"
 
 #include <ros/ros.h>
